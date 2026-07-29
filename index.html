@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Werwolf – Testversion 2.1</title>
+<style>
+:root{--bg:#120d17;--panel:#211827;--panel2:#33223c;--text:#fff9f0;--muted:#d2c6d7;--gold:#e9be62;--red:#b94355;--green:#4f9d72;--blue:#526fa7;--line:#735c7b}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:var(--text);background:radial-gradient(circle at 50% 0,#4e2e55 0,#211426 42%,#0b0810 100%)}
+button,input,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}.screen{min-height:100vh;padding:18px}.card{max-width:1200px;margin:auto;background:rgba(24,16,29,.97);border:2px solid var(--line);border-radius:24px;padding:24px;box-shadow:0 24px 80px rgba(0,0,0,.45)}
+h1,h2,h3,p{margin-top:0}h1{font-size:clamp(38px,6vw,72px);line-height:1.05}.subtitle{color:var(--muted);font-size:18px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px}
+.name-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-height:390px;overflow:auto}.name-item,.role-item{display:flex;gap:8px;align-items:center;background:var(--panel2);padding:9px;border-radius:10px}.role-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.count{width:70px;padding:8px;border-radius:8px;border:1px solid var(--line);background:#160f1a;color:white}
+.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:800;color:#fff;background:var(--blue)}.btn.primary{background:var(--gold);color:#281b0c}.btn.green{background:var(--green)}.btn.red{background:var(--red)}.btn.small{padding:8px 11px;font-size:14px}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.warn{background:#4a2c1b;border-left:6px solid var(--gold);padding:12px;border-radius:10px}.ok{background:#173c2a;border-left:6px solid var(--green);padding:12px;border-radius:10px}
+.role-help{font-size:14px;color:var(--muted);line-height:1.35}.topbar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:16px}.big-center{text-align:center}.reveal-card{max-width:760px;margin:35px auto;text-align:center;background:linear-gradient(145deg,#33203b,#17101c);border:3px solid var(--gold);border-radius:26px;padding:34px}.role-icon{font-size:88px}.role-title{font-size:48px;color:var(--gold);font-weight:900}.role-text{font-size:21px;line-height:1.45}.person{font-size:36px;font-weight:900}.status-table{width:100%;border-collapse:collapse}.status-table th,.status-table td{padding:9px;border-bottom:1px solid #5c4964;text-align:left}.alive{color:#77d79d;font-weight:800}.dead{color:#ff8293;font-weight:800}.phase{font-size:20px;color:var(--gold);font-weight:900;text-transform:uppercase;letter-spacing:.08em}.prompt{font-size:clamp(30px,5vw,58px);line-height:1.18;margin:18px auto;max-width:1000px;text-align:center}.choice-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}.choice{border:2px solid var(--line);background:var(--panel2);color:white;border-radius:12px;padding:12px}.choice.selected{background:var(--gold);color:#25180b;border-color:white}.log{max-height:260px;overflow:auto;background:#120c16;padding:12px;border-radius:12px;color:#ddd}.modal{position:fixed;inset:0;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;padding:18px;z-index:20}.modalbox{max-width:900px;width:100%;max-height:90vh;overflow:auto;background:var(--panel);border:2px solid var(--gold);border-radius:20px;padding:22px}.pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#3b2843;color:#f2e9f4;font-size:13px;margin:2px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}.name-grid{grid-template-columns:repeat(2,1fr)}.choice-grid{grid-template-columns:repeat(2,1fr)}.role-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<section id="setup" class="screen"><div class="card">
+<h1>🐺 Werwolf</h1><p style="color:var(--gold);font-weight:800">Testversion 2.1</p>
+<p class="subtitle">Mit korrigierter Spielerzählung, automatischer Rollenempfehlung und funktionierender Rückkehr aus der geheimen Übersicht.</p>
+<div class="grid2">
+<div class="panel"><h2>1. Mitspielende</h2><div id="nameGrid" class="name-grid"></div>
+<div class="row" style="margin-top:12px"><button class="btn small" onclick="selectAll(true)">Alle auswählen</button><button class="btn small" onclick="selectAll(false)">Alle abwählen</button></div></div>
+<div class="panel"><h2>2. Erzähler</h2>
+<select id="narrator" onchange="updateNarrator()" style="width:100%;padding:12px;border-radius:10px;background:#160f1a;color:white;border:1px solid var(--line)">
+<option>Herr Sponsel</option><option>Frau Eßmann</option><option>Tablet / Schüler</option></select>
+<p class="role-help">Herr Sponsel oder Frau Eßmann werden automatisch aus der Rollenverteilung entfernt, wenn sie erzählen.</p>
+<h2 style="margin-top:22px">3. Rollen</h2>
+<div class="row" style="margin-bottom:10px">
+<label class="name-item" style="flex:1">
+<input id="autoRoles" type="checkbox" checked onchange="if(this.checked)recommendRoles()">
+<span>Sonderrollen automatisch an die Spielerzahl anpassen</span>
+</label>
+<button class="btn small" onclick="recommendRoles()">Jetzt automatisch verteilen</button>
+</div>
+<div id="roleGrid" class="role-grid"></div><div id="roleCheck" class="warn" style="margin-top:12px"></div>
+</div></div>
+<div class="row" style="margin-top:18px;justify-content:center"><button class="btn primary" onclick="prepareGame()">Rollen verteilen</button><button class="btn" onclick="showRules()">Rollenerklärungen</button></div>
+</div></section>
+
+<section id="distribution" class="screen hidden"><div class="card big-center"><h2>Geheime Rollenverteilung</h2><p class="subtitle">Jede Person sieht nur die eigene Rolle.</p><div id="distributionContent"></div></div></section>
+
+<section id="leader" class="screen hidden"><div class="card">
+<div class="topbar"><div><div class="phase" id="phaseLabel">Spielleitung</div><h2 id="leaderTitle">Übersicht</h2></div>
+<div class="row"><button class="btn small" onclick="showRules()">Rollenhilfe</button><button class="btn small" onclick="showOverview()">Geheime Übersicht</button></div></div>
+<div id="leaderMain"></div></div></section>
+
+<div id="rulesModal" class="modal hidden"><div class="modalbox"><div class="topbar"><h2>Rollenerklärungen</h2><button class="btn red small" onclick="closeRules()">Schließen</button></div><div id="rulesContent"></div></div></div>
+
+<script>
+const defaultNames=["Sofia", "Lucia", "Maximilian", "Willem", "Jonas", "Hannes", "Anton", "Felix H.", "Matthias", "Elara", "Luis K.", "Konstantin", "Viktor", "Severin", "Manuel", "Georg", "Emma", "Noah", "Luis R.", "Felix R.", "Moritz", "Fredrik", "Lisa", "Ludwig", "Laura", "Antonia", "Herr Sponsel", "Frau Eßmann"];
+const roles={
+"Werwolf":{icon:"🐺",team:"Wölfe",text:"Du gehörst zu den Werwölfen. Jede Nacht wählt ihr gemeinsam ein Opfer."},
+"Dorfbewohner":{icon:"🏡",team:"Dorf",text:"Du hast keine Nachtfähigkeit. Beobachte, diskutiere und finde die Werwölfe."},
+"Seherin":{icon:"🔮",team:"Dorf",text:"Du überprüfst jede Nacht eine lebende Person und erfährst ihre Seite."},
+"Hexe":{icon:"🧪",team:"Dorf",text:"Du besitzt genau einen Heiltrank und einen Gifttrank. Beide können unabhängig eingesetzt werden."},
+"Jäger":{icon:"🏹",team:"Dorf",text:"Wenn du stirbst, bestimmst du sofort eine lebende Person, die mit dir stirbt."},
+"Amor":{icon:"💘",team:"Dorf",text:"Du bestimmst in der ersten Nacht zwei Verliebte. Stirbt eine Person, stirbt die andere ebenfalls."},
+"Leibwächter":{icon:"🛡️",team:"Dorf",text:"Du schützt jede Nacht eine Person. Dieselbe Person darf nicht zweimal nacheinander geschützt werden."},
+"Blinzelmädchen":{icon:"👁️",team:"Dorf",text:"Du darfst während der Werwolfphase vorsichtig blinzeln und versuchen, die Werwölfe zu erkennen."},
+"Wolfshund":{icon:"🐕",team:"Dorf",text:"Du beginnst im Dorf. Du erwachst, wenn die Seherin oder eine verliebte Person stirbt, und wechselst dann zu den Werwölfen."},
+"Bürgermeister":{icon:"👑",team:"Dorf",text:"Deine Stimme zählt bei der Tagesabstimmung doppelt. Bei Gleichstand entscheidet die Spielleitung entsprechend eurer Hausregel."}
+};
+const roleDefaults={"Werwolf":4,"Seherin":1,"Hexe":1,"Jäger":1,"Amor":1,"Leibwächter":1,"Blinzelmädchen":1,"Wolfshund":1,"Bürgermeister":1};
+let players=[],revealIndex=0,game=null,currentChoice=null,lastView=null,overviewReturnView=null;
+
+function init(){
+ const ng=document.getElementById("nameGrid");
+ defaultNames.forEach(n=>{const l=document.createElement("label");l.className="name-item";l.innerHTML=`<input type="checkbox" data-name="${n}" checked onchange="playerSelectionChanged()"><span>${n}</span>`;ng.appendChild(l)});
+ const rg=document.getElementById("roleGrid");
+ Object.keys(roleDefaults).forEach(r=>{const d=document.createElement("div");d.className="role-item";d.innerHTML=`<span style="font-size:26px">${roles[r].icon}</span><div style="flex:1"><strong>${r}</strong><div class="role-help">${roles[r].text}</div></div><input class="count" type="number" min="0" max="8" value="${roleDefaults[r]}" data-role="${r}" oninput="document.getElementById('autoRoles').checked=false;validateRoles()">`;rg.appendChild(d)});
+ updateNarrator();recommendRoles();
+}
+function selectAll(v){
+ document.querySelectorAll("[data-name]").forEach(x=>{if(!x.disabled)x.checked=v});
+ playerSelectionChanged();
+}
+function updateNarrator(){
+ const n=document.getElementById("narrator").value;
+ document.querySelectorAll("[data-name]").forEach(x=>{const lock=(n==="Herr Sponsel"&&x.dataset.name==="Herr Sponsel")||(n==="Frau Eßmann"&&x.dataset.name==="Frau Eßmann");x.disabled=lock;if(lock)x.checked=false});
+ playerSelectionChanged();
+}
+function selectedNames(){return [...document.querySelectorAll("[data-name]:checked")].map(x=>x.dataset.name)}
+function counts(){const o={};document.querySelectorAll("[data-role]").forEach(x=>o[x.dataset.role]=Number(x.value)||0);return o}
+function playerSelectionChanged(){
+ const auto=document.getElementById("autoRoles");
+ if(auto && auto.checked) recommendRoles(); else validateRoles();
+}
+function recommendedRoleCounts(n){
+ const c={"Werwolf":0,"Seherin":0,"Hexe":0,"Jäger":0,"Amor":0,"Leibwächter":0,"Blinzelmädchen":0,"Wolfshund":0,"Bürgermeister":0};
+ if(n<5) return c;
+ if(n<=7)c["Werwolf"]=1;
+ else if(n<=11)c["Werwolf"]=2;
+ else if(n<=16)c["Werwolf"]=3;
+ else if(n<=21)c["Werwolf"]=4;
+ else if(n<=26)c["Werwolf"]=5;
+ else c["Werwolf"]=6;
+ if(n>=6)c["Seherin"]=1;
+ if(n>=7)c["Hexe"]=1;
+ if(n>=9)c["Jäger"]=1;
+ if(n>=10)c["Amor"]=1;
+ if(n>=12)c["Leibwächter"]=1;
+ if(n>=14)c["Bürgermeister"]=1;
+ if(n>=16)c["Wolfshund"]=1;
+ if(n>=18)c["Blinzelmädchen"]=1;
+ return c;
+}
+function recommendRoles(){
+ const n=selectedNames().length;
+ const c=recommendedRoleCounts(n);
+ document.querySelectorAll("[data-role]").forEach(x=>x.value=c[x.dataset.role]||0);
+ validateRoles();
+}
+function validateRoles(){
+ const n=selectedNames().length,c=counts(),special=Object.values(c).reduce((a,b)=>a+b,0),vill=n-special,box=document.getElementById("roleCheck");
+ if(n===0){box.className="warn";box.textContent="Keine Mitspielenden ausgewählt.";return}
+ if(vill<0){box.className="warn";box.textContent=`Zu viele Sonderrollen: ${special} für ${n} ausgewählte Personen.`}
+ else{
+   box.className="ok";
+   box.textContent=`${n} ausgewählte Mitspielende · ${special} Sonderrollen · ${vill} Dorfbewohner`;
+ }
+}
+function prepareGame(){
+ const names=selectedNames(),c=counts(),list=[];Object.entries(c).forEach(([r,n])=>{for(let i=0;i<n;i++)list.push(r)});while(list.length<names.length)list.push("Dorfbewohner");
+ if(list.length!==names.length){alert("Die Rollenanzahl passt nicht.");return}
+ shuffle(names);shuffle(list);players=names.map((name,i)=>({name,role:list[i],team:roles[list[i]].team,alive:true}));
+ game={night:0,heal:true,poison:true,lastProtected:null,protected:null,wolfTarget:null,poisonTarget:null,lovers:[],wolfhoundAwake:false,log:[],winner:null,pendingDeaths:[],pendingHunter:null};
+ revealIndex=0;showScreen("distribution");renderReveal();
+}
+function renderReveal(){const c=document.getElementById("distributionContent");if(revealIndex>=players.length){c.innerHTML=`<div class="reveal-card"><h2>Alle Rollen wurden angesehen.</h2><button class="btn primary" onclick="startGame()">Spielleitung starten</button></div>`;return}const p=players[revealIndex];c.innerHTML=`<div class="reveal-card"><div class="person">${p.name}</div><p>Nur diese Person schaut auf den Bildschirm.</p><button class="btn primary" onclick="showRole()">Rolle anzeigen</button></div>`}
+function showRole(){const p=players[revealIndex],r=roles[p.role];document.getElementById("distributionContent").innerHTML=`<div class="reveal-card"><div class="role-icon">${r.icon}</div><div class="role-title">${p.role}</div><div class="role-text">${r.text}</div><button class="btn primary" onclick="hideRole()">Rolle verdecken</button></div>`}
+function hideRole(){revealIndex++;renderReveal()}
+function startGame(){showScreen("leader");beginNight()}
+
+function beginNight(){
+ game.night++;game.protected=null;game.wolfTarget=null;game.poisonTarget=null;
+ log(`Nacht ${game.night} beginnt.`);
+ promptScreen(`🌙 Nacht ${game.night}`,"Alle schließen die Augen.",[{t:"Weiter",f:()=>runNightStep(0)}]);
+}
+function nightSteps(){const arr=[];if(game.night===1&&aliveRole("Amor")&&game.lovers.length===0){arr.push("amor","loversReveal")}if(aliveRole("Leibwächter"))arr.push("guard");if(aliveTeam("Wölfe"))arr.push("wolves");if(aliveRole("Seherin"))arr.push("seer");if(aliveRole("Hexe"))arr.push("witch");arr.push("resolve");return arr}
+function runNightStep(i){const steps=nightSteps();const s=steps[i];const next=()=>runNightStep(i+1);
+ if(s==="amor")return amorStep(next);
+ if(s==="loversReveal")return loversReveal(next);
+ if(s==="guard")return guardStep(next);
+ if(s==="wolves")return wolvesStep(next);
+ if(s==="seer")return seerStep(next);
+ if(s==="witch")return witchStep(next);
+ if(s==="resolve")return resolveNight();
+}
+function amorStep(next){choiceScreen("💘 Amor","Amor bestimmt zwei Verliebte.",living(),2,sel=>{game.lovers=sel;log("Verliebte: "+sel.map(i=>players[i].name).join(" & "));next()})}
+function loversReveal(next){promptScreen("💞 Die Verliebten","Die Verliebten öffnen die Augen und erkennen sich.",[{t:"Weiter",f:next}])}
+function guardStep(next){const opts=living().filter(i=>i!==game.lastProtected);choiceScreen("🛡️ Leibwächter","Wen schützt der Leibwächter?",opts,1,sel=>{game.protected=sel[0];game.lastProtected=sel[0];log("Geschützt: "+players[sel[0]].name);next()})}
+function wolvesStep(next){const wolves=living().filter(i=>players[i].team==="Wölfe"),opts=living().filter(i=>!wolves.includes(i));choiceScreen("🐺 Werwölfe","Wen wählen die Werwölfe?",opts,1,sel=>{game.wolfTarget=sel[0];log("Werwolfziel: "+players[sel[0]].name);next()})}
+function seerStep(next){choiceScreen("🔮 Seherin","Wen überprüft die Seherin?",living(),1,sel=>{const p=players[sel[0]],result=p.team==="Wölfe"?"gehört zu den Werwölfen":"gehört zum Dorf";promptScreen("🔮 Ergebnis",`${p.name} ${result}.`,[{t:"Weiter",f:next}])})}
+function witchStep(next){
+ const target=game.wolfTarget!=null?players[game.wolfTarget].name:"niemanden";
+ let html=`<div class="phase">🧪 Hexe</div><div class="prompt">Die Hexe öffnet die Augen.</div><p style="text-align:center;font-size:22px">Die Werwölfe haben <strong>${target}</strong> gewählt.</p><div class="panel" style="max-width:760px;margin:18px auto"><h3>Heiltrank ${game.heal?'<span class="pill">verfügbar</span>':'<span class="pill">verbraucht</span>'}</h3><div class="row">`;
+ if(game.heal&&game.wolfTarget!=null)html+=`<button class="btn green" onclick="witchHeal()">Heilen</button>`;
+ html+=`<button class="btn" onclick="witchNoHeal()">Nicht heilen</button></div><hr style="border-color:#634f6b"><h3>Gifttrank ${game.poison?'<span class="pill">verfügbar</span>':'<span class="pill">verbraucht</span>'}</h3><div class="row">`;
+ if(game.poison)html+=`<button class="btn red" onclick="witchPoison()">Person vergiften</button>`;
+ html+=`<button class="btn" onclick="witchNoPoison()">Kein Gift einsetzen</button></div></div>`;
+ leader(html,"Hexe");game._witchNext=next;game._witchHealed=false;game._witchPoisonDone=false;
+}
+function witchHeal(){game.heal=false;game.wolfTarget=null;game._witchHealed=true;log("Heiltrank eingesetzt.");witchStep(game._witchNext)}
+function witchNoHeal(){game._witchHealed=true;witchPoisonStage()}
+function witchPoisonStage(){let html=`<div class="phase">🧪 Hexe</div><div class="prompt">Gifttrank</div><div class="row" style="justify-content:center">`;if(game.poison)html+=`<button class="btn red" onclick="witchPoison()">Person vergiften</button>`;html+=`<button class="btn primary" onclick="witchNoPoison()">Kein Gift einsetzen und Nacht beenden</button></div>`;leader(html,"Hexe")}
+function witchPoison(){choiceScreen("🧪 Gifttrank","Wen vergiftet die Hexe?",living(),1,sel=>{game.poison=false;game.poisonTarget=sel[0];log("Giftziel: "+players[sel[0]].name);game._witchNext()})}
+function witchNoPoison(){game._witchNext()}
+
+function resolveNight(){
+ const deaths=[];if(game.wolfTarget!=null&&game.wolfTarget!==game.protected)deaths.push(game.wolfTarget);if(game.poisonTarget!=null)deaths.push(game.poisonTarget);
+ queueDeaths([...new Set(deaths)],"in der Nacht",()=>finishNight());
+}
+function queueDeaths(indices,reason,done){
+ if(!indices.length){done();return}
+ const i=indices.shift();killAndResolve(i,reason,()=>queueDeaths(indices,reason,done));
+}
+function killAndResolve(i,reason,done){
+ if(i==null||!players[i].alive){done();return}
+ players[i].alive=false;log(`${players[i].name} stirbt ${reason}.`);
+ const extras=[];
+ if(game.lovers.includes(i)){const other=game.lovers.find(x=>x!==i);if(other!=null&&players[other].alive)extras.push(other)}
+ const afterHunter=()=>{
+   if(extras.length)queueDeaths(extras,"aus Liebeskummer",done);else done();
+ };
+ if(players[i].role==="Jäger"&&living().length){choiceScreen("🏹 Jäger",`${players[i].name} ist gestorben und nimmt noch jemanden mit.`,living(),1,sel=>killAndResolve(sel[0],"durch den Jäger",afterHunter));}
+ else afterHunter();
+}
+function finishNight(){
+ checkWolfhound();if(checkWin())return;
+ const last=game.log.slice().reverse().find(x=>x.includes("stirbt"));
+ promptScreen("☀️ Morgen",last?`Das Dorf erwacht. ${last}`:"Das Dorf erwacht. Niemand ist gestorben.",[{t:"Tagesabstimmung",f:dayVote}]);
+}
+function dayVote(){choiceScreen("🗳️ Tagesabstimmung","Wen wählt das Dorf aus dem Spiel?",living(),1,sel=>killAndResolve(sel[0],"durch die Abstimmung",()=>{checkWolfhound();if(!checkWin())beginNight()}),true)}
+function checkWolfhound(){if(game.wolfhoundAwake)return;const d=players.findIndex(p=>p.alive&&p.role==="Wolfshund");if(d<0)return;const trigger=players.some(p=>p.role==="Seherin"&&!p.alive)||game.lovers.some(i=>!players[i].alive);if(trigger){players[d].team="Wölfe";game.wolfhoundAwake=true;log("Der Wolfshund ist erwacht.");alert("🐺 Der Wolfshund ist erwacht und gehört nun zu den Werwölfen.")}}
+function checkWin(){const alive=players.filter(p=>p.alive),w=alive.filter(p=>p.team==="Wölfe").length,o=alive.length-w;if(w===0){game.winner="Das Dorf";winner();return true}if(w>=o){game.winner="Die Werwölfe";winner();return true}return false}
+function winner(){promptScreen("🏆 Spielende",`${game.winner} gewinnen!`,[{t:"Übersicht anzeigen",f:showOverview}])}
+
+function aliveRole(r){return players.some(p=>p.alive&&p.role===r)}function aliveTeam(t){return players.some(p=>p.alive&&p.team===t)}function living(){return players.map((p,i)=>p.alive?i:null).filter(i=>i!==null)}
+function choiceScreen(title,prompt,indices,max,callback,manualMayor=false){
+ currentChoice={selected:[],max,callback};let html=`<div class="phase">${title}</div><div class="prompt">${prompt}</div>`;
+ if(manualMayor&&aliveRole("Bürgermeister"))html+=`<p style="text-align:center">👑 Die Stimme des Bürgermeisters zählt doppelt.</p>`;
+ html+=`<div class="choice-grid">`;indices.forEach(i=>html+=`<button class="choice" data-i="${i}" onclick="toggleChoice(${i})">${players[i].name}</button>`);html+=`</div><div class="row" style="justify-content:center"><button id="confirmChoice" class="btn primary" disabled onclick="confirmChoice()">Bestätigen</button></div>`;leader(html,title)
+}
+function toggleChoice(i){const s=currentChoice.selected,p=s.indexOf(i);if(p>=0)s.splice(p,1);else{if(s.length>=currentChoice.max)s.shift();s.push(i)}document.querySelectorAll(".choice").forEach(b=>b.classList.toggle("selected",s.includes(Number(b.dataset.i))));document.getElementById("confirmChoice").disabled=s.length!==currentChoice.max}
+function confirmChoice(){const c=currentChoice;currentChoice=null;c.callback([...c.selected])}
+function promptScreen(title,prompt,buttons){let html=`<div class="phase">${title}</div><div class="prompt">${prompt}</div><div class="row" style="justify-content:center">`;buttons.forEach((b,i)=>html+=`<button class="btn ${i===0?'primary':''}" id="pb${i}">${b.t}</button>`);html+=`</div>`;leader(html,title);setTimeout(()=>buttons.forEach((b,i)=>document.getElementById("pb"+i).onclick=b.f),0)}
+function leader(html,title){document.getElementById("leaderTitle").textContent=title;document.getElementById("leaderMain").innerHTML=html;lastView={html,title}}
+function showOverview(){overviewReturnView=lastView?{html:lastView.html,title:lastView.title}:null;let rows=players.map(p=>`<tr><td>${p.name}</td><td>${roles[p.role].icon} ${p.role}</td><td>${p.team}</td><td class="${p.alive?'alive':'dead'}">${p.alive?'lebt':'ausgeschieden'}</td></tr>`).join("");leader(`<table class="status-table"><thead><tr><th>Name</th><th>Rolle</th><th>Seite</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table><h3>Protokoll</h3><div class="log">${game.log.join("<br>")}</div><div class="row" style="margin-top:14px"><button class="btn primary" onclick="restoreView()">Zurück</button></div>`,"Geheime Übersicht")}
+function restoreView(){
+ if(overviewReturnView){
+   const v=overviewReturnView;
+   overviewReturnView=null;
+   leader(v.html,v.title);
+ }
+}
+function log(t){game.log.push(t)}
+function showRules(){const c=document.getElementById("rulesContent");c.innerHTML="";Object.entries(roles).forEach(([n,r])=>c.innerHTML+=`<div class="panel" style="margin-bottom:10px"><h3>${r.icon} ${n}</h3><p>${r.text}</p></div>`);document.getElementById("rulesModal").classList.remove("hidden")}
+function closeRules(){document.getElementById("rulesModal").classList.add("hidden")}
+function showScreen(id){document.querySelectorAll("section.screen").forEach(s=>s.classList.add("hidden"));document.getElementById(id).classList.remove("hidden")}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}}
+init();
+</script>
+<div style="position:fixed;right:10px;bottom:8px;color:#cdbfd2;font-size:12px;opacity:.8">Werwolf 2.1</div></body>
+</html>
